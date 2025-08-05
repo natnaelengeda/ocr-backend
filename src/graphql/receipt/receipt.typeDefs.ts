@@ -1,6 +1,8 @@
 import gql from 'graphql-tag';
 
 export const receiptTypeDefs = gql`
+  scalar Upload
+
   type Receipt {
     id: ID!
     storeName: String!
@@ -36,5 +38,9 @@ export const receiptTypeDefs = gql`
       items: [ItemInput!]!
     ): Receipt                
     deleteReceipt(id: ID!): String
+    createReceiptWithUpload(
+      image: Upload!
+    ): Receipt
   }
+
 `;

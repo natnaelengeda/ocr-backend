@@ -9,6 +9,8 @@ import { expressMiddleware } from '@as-integrations/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer'
 import { resolvers, typeDefs } from './graphql';
 
+const test = require('./test/test');
+
 dotenv.config();
 
 // Data 
@@ -26,7 +28,9 @@ async function startServer() {
   });
 
   await server.start();
+  app.use("/", test)
 
+  // app.use(graphqlUploadExpress({ maxFileSize: 3 * 1024 * 1024, maxFiles: 1 })); // 3MB limit
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(expressMiddleware(server));
