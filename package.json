@@ -1,0 +1,38 @@
+{
+  "name": "@alamondai/nodets-express-starter",
+  "version": "1.1.0",
+  "description": "A Primary Backend Boilerplage for Nodets and Express",
+  "main": "index.js",
+  "bin": "./bin/cli.js",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/index.js",
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\"",
+    "node-dev": "npx nodemon ./src/index.ts",
+    "test": "jest --watchAll --no-cache"
+  },
+  "author": "Natnael Engeda",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/natnaelengeda/nodets-express-starter"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@apollo/server": "^5.0.0",
+    "@as-integrations/express4": "^1.1.2",
+    "@graphql-tools/merge": "^9.1.1",
+    "@prisma/client": "^6.13.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "graphql": "^16.11.0",
+    "graphql-tag": "^2.12.6"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.0",
+    "prisma": "^6.13.0",
+    "typescript": "^5.6.3"
+  }
+}
