@@ -2,19 +2,16 @@ import express from 'express';
 import dotenv from 'dotenv';
 import http from 'http';
 import cors from 'cors';
-
-// apollo
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express4';
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer'
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { resolvers, typeDefs } from './graphql';
 
 const test = require('./test/test');
+import { urlList } from './utils/urlList';
 
 dotenv.config();
-
-// Data 
-import { urlList } from './utils/urlList';
 
 async function startServer() {
   const app = express();
@@ -28,13 +25,8 @@ async function startServer() {
   });
 
   await server.start();
-  app.use("/", test)
 
-  // app.use(graphqlUploadExpress({ maxFileSize: 3 * 1024 * 1024, maxFiles: 1 })); // 3MB limit
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(expressMiddleware(server));
-
+  // Apply CORS globally or specifically to /graphql endpoint
   app.use(cors({
     origin: urlList,
     optionsSuccessStatus: 200,
@@ -42,10 +34,21 @@ async function startServer() {
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   }));
 
+  // Other routes
+  app.use("/", test);
+
+  // Upload middleware must come before Apollo middleware
+  app.use(
+    '/graphql',
+    // graphqlUploadExpress({ maxFileSize: 3 * 1024 * 1024, maxFiles: 1 }), // 3MB limit
+    express.json(),
+    express.urlencoded({ extended: true }),
+    expressMiddleware(server)
+  );
+
   httpServer.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
   });
 }
 
 startServer();
-
