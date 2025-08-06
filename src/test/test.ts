@@ -46,25 +46,25 @@ export async function extractTextFromImage(image: any) {
 function parseReceiptText(rawText: string) {
   const lines = rawText.split('\n').map(line => line.trim()).filter(Boolean);
 
-  const storeName = lines[0]; // naive assumption: first line is store name
+  const storeName = lines[0];
   let purchaseDate = '';
   let totalAmount = 0;
   const items: { name: string, quantity?: number, price?: number }[] = [];
 
   for (const line of lines) {
-    // Date
+    
     const dateMatch = line.match(/(date|Date)[:\s]*([\d\-\/]+)/);
     if (dateMatch) {
       purchaseDate = new Date(dateMatch[2]).toISOString();
     }
 
-    // Total
+    
     const totalMatch = line.match(/(total|Total)[:\s]*([\d\.]+)/);
     if (totalMatch) {
       totalAmount = parseFloat(totalMatch[2]);
     }
 
-    // Items (very basic assumption: name + price)
+   
     const itemMatch = line.match(/^([A-Za-z\s]+)\s+([\d\.]+)$/);
     if (itemMatch) {
       items.push({

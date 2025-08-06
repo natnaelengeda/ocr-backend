@@ -2,10 +2,9 @@
 import { v4 as uuidv4 } from "uuid";
 
 export function parseReceipt(ocrText: string) {
-  // Helper to clean text
+
   const cleanText = (text: string) => text.replace(/\s+/g, ' ').trim();
 
-  // Extract items with prices
   const extractItemsWithPrices = (text: string) => {
     const items = [];
     const lines = text.split('\n');
@@ -13,7 +12,6 @@ export function parseReceipt(ocrText: string) {
     for (const line of lines) {
       const cleanLine = line.trim();
 
-      // Skip headers, totals, and metadata
       if (!cleanLine ||
         cleanLine.length < 3 ||
         /^[\-=_\*\.]+$/.test(cleanLine) ||
@@ -21,10 +19,10 @@ export function parseReceipt(ocrText: string) {
         continue;
       }
 
-      // Pattern matching for items with prices
+
       let matched = false;
 
-      // Pattern 1: "Item Name $9.99" or "Item Name 9.99"
+
       let match = cleanLine.match(/^(.+?)\s+\$?([\d,]+\.?\d{0,2})$/);
       if (match && !matched) {
         const name = cleanText(match[1]);
@@ -41,7 +39,7 @@ export function parseReceipt(ocrText: string) {
         }
       }
 
-      // Pattern 2: "2x Item Name $9.99" or "Item Name x2 $9.99"
+
       if (!matched) {
         match = cleanLine.match(/(\d+)\s*[xX]\s+(.+?)\s+\$?([\d,]+\.?\d{0,2})$/);
         if (match) {
@@ -61,7 +59,7 @@ export function parseReceipt(ocrText: string) {
         }
       }
 
-      // Pattern 3: "Item Name @ $4.99 x 3"
+
       if (!matched) {
         match = cleanLine.match(/^(.+?)\s+@\s*\$?([\d,]+\.?\d{0,2})\s*[xX]?\s*(\d+)?/i);
         if (match) {
@@ -85,7 +83,7 @@ export function parseReceipt(ocrText: string) {
     return items;
   };
 
-  // Extract total
+
   const extractTotal = (text: string) => {
     const patterns = [
       /(?:total|amount due|balance)[\s:]*\$?([\d,]+\.?\d*)/i,
@@ -109,12 +107,23 @@ export function parseReceipt(ocrText: string) {
     .map(line => line.trim())
     .filter(Boolean);
 
+    // Add most known restaurants/burger places, same can be done for items
+  const famousStoreNames = ['chanoly amoothie & noodle', 'pizza hut', 'mulu shewa', 'times coffee', 'tomoca coffee'];
+
+  const ocrLines = ocrText
+    .split('\n')
+    .map(line => line.toLowerCase().replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  const matchedStore = famousStoreNames.find(store =>
+    ocrLines.some(line => line.includes(store))
+  );
+
+  const storeName = matchedStore || ocrLines[0] || "Unknown Store";
 
   const dateRegex = /\b(\d{2,4}[-/.]\d{2}[-/.]\d{2,4})\b/;
-
   const purchaseDate =
     lines.find(line => dateRegex.test(line))?.match(dateRegex)?.[1] ?? "";
-  const storeName = ocrText[0] || "Unknown Store";
   const items = extractItemsWithPrices(ocrText);
   const total = extractTotal(ocrText);
 

@@ -7,8 +7,11 @@ import GraphQLUpload from "graphql-upload/GraphQLUpload.mjs";
 
 // utils
 import { prisma } from "../../utils/prisma";
-import { extractTextFromImage } from '../../utils/tesseractFunc';
 import { parseReceipt } from '../../utils/parseReciept';
+
+// Text Extraction
+import { tesseractExtractFunction } from '../../utils/tesseractFunc';
+// import { extractWithGoogleOCR } from '../../utils/extractGoogleOCR';
 
 const uploadsDir = './uploads';
 if (!fs.existsSync(uploadsDir)) {
@@ -86,7 +89,7 @@ export const receiptResolvers = {
     deleteReceipt: async (_: any, args: { id: string }) => {
       await prisma.item.deleteMany({ where: { receiptId: args.id } });
       await prisma.receipt.delete({ where: { id: args.id } });
-      return "Receipt deleted";
+      return "receipt deleted";
     },
 
     uploadReceipt: async (_: any, args: { image: any }) => {
@@ -105,7 +108,11 @@ export const receiptResolvers = {
         stream.pipe(out);
         await finished(out);
 
-        const rawText = await extractTextFromImage(filePath);
+        const rawText = await tesseractExtractFunction(filePath);
+
+        // google-cloud vision not giving accurate test as tesseract.js
+        // const rawText = await extractWithGoogleOCR(filePath);
+
         const recieptData = parseReceipt(rawText);
 
         // console.log(rawText);
