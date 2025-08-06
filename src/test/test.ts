@@ -34,7 +34,7 @@ router.get('/test-tessaract', async (req: Request, res: Response) => {
   }
 });
 
-async function extractTextFromImage(image: any) {
+export async function extractTextFromImage(image: any) {
 
   const result = await Tesseract.recognize(image, 'eng', {
     // logger: (m) => console.log(m), // Optional progress logging

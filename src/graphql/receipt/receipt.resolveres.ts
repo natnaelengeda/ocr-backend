@@ -1,11 +1,19 @@
-import { v4 as uuidv4 } from 'uuid';
-import { createWriteStream } from 'fs';
-import { mkdir } from 'fs/promises';
 import { finished } from 'stream/promises';
 import path from 'path';
-import GraphQLUpload from "graphql-upload/GraphQLUpload.mjs";
-import { prisma } from "../../utils/prisma";
+import fs from 'fs';
 
+// graphql upload
+import GraphQLUpload from "graphql-upload/GraphQLUpload.mjs";
+
+// utils
+import { prisma } from "../../utils/prisma";
+import { extractTextFromImage } from '../../utils/tesseractFunc';
+import { parseReceipt } from '../../utils/parseReciept';
+
+const uploadsDir = './uploads';
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 interface Upload {
   createReadStream: () => NodeJS.ReadableStream;
@@ -36,6 +44,17 @@ export const receiptResolvers = {
         },
       });
     },
+    getImageBase64: async (_: any, args: { filename: string }) => {
+      try {
+        console.log("Here")
+        const filePath = path.join(process.env.FILE_LOCATION ?? "", args.filename);
+
+        const file = fs.readFileSync(filePath);
+        return `data:image/webp;base64,${file.toString("base64")}`;
+      } catch (error) {
+        console.error(error);
+      }
+    },
   },
 
   Mutation: {
@@ -58,133 +77,71 @@ export const receiptResolvers = {
       });
     },
 
+    deleteAllReceipts: async (_: any) => {
+      await prisma.item.deleteMany();
+      await prisma.receipt.deleteMany();
+      return "receiepts deleted";
+    },
+
     deleteReceipt: async (_: any, args: { id: string }) => {
       await prisma.item.deleteMany({ where: { receiptId: args.id } });
       await prisma.receipt.delete({ where: { id: args.id } });
       return "Receipt deleted";
     },
 
-    createReceiptWithUpload: async (_: any, args: any) => {
+    uploadReceipt: async (_: any, args: { image: any }) => {
       try {
-        console.log('🔍 Starting upload process...');
-        console.log('📝 Args received:', args);
+        const file = await args.image;
+        const { createReadStream, filename } = file;
 
-        // Check if image exists
-        if (!args.image) {
-          console.error('❌ No image provided in args');
-          throw new Error('No image file provided');
-        }
+        const timestamp = Date.now();
+        const extension = path.extname(filename);
+        const uniqueFilename = `${timestamp}-${path.basename(filename, extension)}${extension}`;
 
-        const { image } = args;
-        console.log('📷 Image object:', typeof image);
+        const stream = createReadStream();
+        const filePath = `./uploads/${uniqueFilename}`;
+        const out = fs.createWriteStream(filePath);
 
-        // Await the image promise and destructure
-        let createReadStream, filename, mimetype;
-        try {
-          const imageData = await image;
-          console.log('📊 Image data:', imageData);
+        stream.pipe(out);
+        await finished(out);
 
-          createReadStream = imageData.createReadStream;
-          filename = imageData.filename;
-          mimetype = imageData.mimetype;
+        const rawText = await extractTextFromImage(filePath);
+        const recieptData = parseReceipt(rawText);
 
-          console.log('📝 File details:', { filename, mimetype });
-        } catch (error: any) {
-          console.error('❌ Error awaiting image:', error);
-          throw new Error(`Failed to process image: ${error.message}`);
-        }
+        // console.log(rawText);
+        console.log(recieptData);
 
-        // Validate mimetype
-        if (!mimetype || !mimetype.startsWith('image/')) {
-          console.error('❌ Invalid mimetype:', mimetype);
-          throw new Error(`File must be an image. Received: ${mimetype}`);
-        }
+        await prisma.receipt.create({
+          data: {
+            storeName: recieptData.storeName,
+            purchaseDate: recieptData.purchaseDate ? new Date(recieptData.purchaseDate) : new Date(),
+            totalAmount: recieptData.totalAmount,
+            imageUrl: filePath,
+            items: {
+              create: recieptData.items,
+            }
+          },
+          include: {
+            items: true,
+          },
+        })
 
-        // Generate unique filename
-        const uniqueFilename = `${uuidv4()}-${filename}`;
-        const uploadDir = path.join(__dirname, "../../../upload/reciepts");
-        const filePath = path.join(uploadDir, uniqueFilename);
 
-        console.log('📁 Upload paths:', { uploadDir, filePath });
-
-        // Create directory
-        try {
-          await mkdir(uploadDir, { recursive: true });
-          console.log('✅ Directory created/verified');
-        } catch (error: any) {
-          console.error('❌ Error creating directory:', error);
-          throw new Error(`Failed to create upload directory: ${error.message}`);
-        }
-
-        // Handle file stream
-        try {
-          console.log('💾 Starting file write...');
-
-          const stream = createReadStream();
-          const out = createWriteStream(filePath);
-
-          // Add error handlers to streams
-          stream.on('error', (error: any) => {
-            console.error('❌ Read stream error:', error);
-          });
-
-          out.on('error', (error) => {
-            console.error('❌ Write stream error:', error);
-          });
-
-          stream.pipe(out);
-          await finished(out);
-
-          console.log('✅ File saved successfully:', filePath);
-        } catch (error: any) {
-          console.error('❌ Error saving file:', error);
-          throw new Error(`Failed to save file: ${error!.message}`);
-        }
-
-        // Create receipt data
-        const imageUrl = `/uploads/receipts/${uniqueFilename}`;
-        const storeName = "Placeholder Store";
-        const totalAmount = 0.0;
-        const items = [{ name: "Placeholder Item", quantity: 1 }];
-
-        console.log('💾 Creating receipt in database...');
-
-        // Create receipt in database
-        try {
-          const receipt = await prisma.receipt.create({
-            data: {
-              storeName,
-              purchaseDate: new Date(),
-              totalAmount,
-              imageUrl,
-              items: {
-                create: items,
-              },
-            },
-            include: {
-              items: true,
-            },
-          });
-
-          console.log('✅ Receipt created successfully:', receipt.id);
-          return receipt;
-
-        } catch (error: any) {
-          console.error('❌ Database error:', error);
-          throw new Error(`Failed to create receipt in database: ${error.message}`);
-        }
+        return {
+          status: "success",
+          message: "File uploaded successfully",
+          imageUrl: `/uploads/${uniqueFilename}`
+        };
 
       } catch (error: any) {
-        console.error('❌ Overall error in createReceiptWithUpload:', error);
-
-        // Re-throw with more context
-        if (error.message) {
-          throw new Error(`Upload failed: ${error.message}`);
-        } else {
-          throw new Error(`Upload failed: ${JSON.stringify(error)}`);
-        }
+        console.error('Upload error:', error);
+        return {
+          status: "error",
+          message: `Upload failed: ${error.message}`
+        };
       }
     }
-
   },
+
+
 };

@@ -17,16 +17,26 @@ export const receiptTypeDefs = gql`
     id: ID!
     name: String!
     quantity: Int
+    price: String!
+  }
+
+  type MutationResponse {
+    status: String!
+    message: String
+    imageUrl: String
   }
 
   input ItemInput {
     name: String!
     quantity: Int
+    price: String!
+    totalPrice: String!
   }
-
+  
   extend type Query {
     receipts: [Receipt]       
     receipt(id: ID!): Receipt 
+    getImageBase64(filename: String!): String!
   }
 
   extend type Mutation {
@@ -37,10 +47,8 @@ export const receiptTypeDefs = gql`
       imageUrl: String!
       items: [ItemInput!]!
     ): Receipt                
+    deleteAllReceipts: String
     deleteReceipt(id: ID!): String
-    createReceiptWithUpload(
-      image: Upload!
-    ): Receipt
+    uploadReceipt(image: Upload!): MutationResponse
   }
-
 `;

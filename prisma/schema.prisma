@@ -25,9 +25,11 @@ model Receipt {
 }
 
 model Item {
-  id        String  @id @default(uuid())
-  name      String
-  quantity  Int?
-  receiptId String
-  receipt   Receipt @relation(fields: [receiptId], references: [id])
+  id         String  @id @default(uuid())
+  name       String
+  quantity   Int?
+  price      String  @default("")
+  totalPrice String  @default("")
+  receiptId  String
+  receipt    Receipt @relation(fields: [receiptId], references: [id])
 }
