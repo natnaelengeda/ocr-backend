@@ -18,7 +18,6 @@ Follow these steps to get the project up and running on your local machine.
 git clone https://github.com/natnaelengeda/ocr-backend.git
 ```
 cd ocr-backend
-```
 
 ### 2. Install dependencies
 
