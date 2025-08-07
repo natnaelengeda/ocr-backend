@@ -37,6 +37,7 @@ cp .env.example .env
 ```
 
 Add Google Vision API on: GOOGLE_VISION_API
+Make Sure the PORT runs on PORT: 7454 otherwise change it on the frontend as well
 
 Now, open the `.env` file and fill in the required environment variables, especially the `DATABASE_URL`.
 
