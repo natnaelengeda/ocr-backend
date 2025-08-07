@@ -11,7 +11,8 @@ import { parseReceipt } from '../../utils/parseReciept';
 
 // Text Extraction
 import { tesseractExtractFunction } from '../../utils/tesseractFunc';
-// import { extractWithGoogleOCR } from '../../utils/extractGoogleOCR';
+import { extractWithGoogleOCR } from '../../utils/extractGoogleOCR';
+import GoogleOCRTextParse, { ParsedReceipt, ParseOptions } from '../../utils/googleOcrParseText';
 
 const uploadsDir = './uploads';
 if (!fs.existsSync(uploadsDir)) {
@@ -108,15 +109,22 @@ export const receiptResolvers = {
         stream.pipe(out);
         await finished(out);
 
-        const rawText = await tesseractExtractFunction(filePath);
+        // You can use Tesseract, but less accurate
+        // const rawText = await tesseractExtractFunction(filePath);
 
-        // google-cloud vision not giving accurate test as tesseract.js
-        // const rawText = await extractWithGoogleOCR(filePath);
+        // Better accuracy, but costs more...
+        const rawText = await extractWithGoogleOCR(filePath);
+        const parser = new GoogleOCRTextParse();
+        const options: ParseOptions = { includeRaw: true };
 
-        const recieptData = parseReceipt(rawText);
+        const recieptData: ParsedReceipt = parser.parseReceiptEnhanced(rawText, options);
 
-        // console.log(rawText);
-        console.log(recieptData);
+
+        console.log(rawText)
+        // const recieptData = parseReceipt(rawText);
+
+        console.log(rawText);
+        // console.log(result);
 
         await prisma.receipt.create({
           data: {

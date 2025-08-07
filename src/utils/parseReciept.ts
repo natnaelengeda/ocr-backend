@@ -19,7 +19,6 @@ export function parseReceipt(ocrText: string) {
         continue;
       }
 
-
       let matched = false;
 
 
@@ -107,8 +106,8 @@ export function parseReceipt(ocrText: string) {
     .map(line => line.trim())
     .filter(Boolean);
 
-    // Add most known restaurants/burger places, same can be done for items
-  const famousStoreNames = ['chanoly amoothie & noodle', 'pizza hut', 'mulu shewa', 'times coffee', 'tomoca coffee'];
+  // Add most known restaurants/burger places, same can be done for items
+  const famousStoreNames = ['chanoly amoothie & noodle', 'pizza hut', 'mulu shewa', 'times coffee', 'tomoca coffee', 'bakema cake cookies&bread produ'];
 
   const ocrLines = ocrText
     .split('\n')
@@ -119,7 +118,9 @@ export function parseReceipt(ocrText: string) {
     ocrLines.some(line => line.includes(store))
   );
 
-  const storeName = matchedStore || ocrLines[0] || "Unknown Store";
+  const storeName = matchedStore ||
+    ocrLines[1] || // Most Reciepts in Ethiopia have TIN Number on the fisrt line then Store name on the second one.
+    "Unknown Store";
 
   const dateRegex = /\b(\d{2,4}[-/.]\d{2}[-/.]\d{2,4})\b/;
   const purchaseDate =

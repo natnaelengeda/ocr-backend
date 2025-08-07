@@ -36,6 +36,8 @@ Create a `.env` file in the root of the project by copying the example file:
 cp .env.example .env
 ```
 
+Add Google Vision API on: GOOGLE_VISION_API
+
 Now, open the `.env` file and fill in the required environment variables, especially the `DATABASE_URL`.
 
 ### 4. Set up the database
